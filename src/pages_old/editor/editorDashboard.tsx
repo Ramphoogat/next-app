@@ -1,0 +1,323 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  FiUsers,
+  FiActivity,
+  FiLayout,
+  FiType,
+  FiShield,
+  FiChevronDown,
+  FiFileText,
+  FiSettings,
+  FiCalendar,
+} from "react-icons/fi";
+import { BsFillKanbanFill } from "react-icons/bs";
+import Kanban from "../../components/Kanban";
+import Calendar from "../../components/calendar_ui/Calendar";
+import api from "../../api/axios";
+import { AxiosError } from "axios";
+import DashboardLayout from "../../components/DashboardLayout";
+import ProfileEditModal from "../../components/ProfileEditModal";
+import Loader from "../../components/Loader";
+import {
+  type IUser,
+  type IAdminStats,
+  type INotification,
+} from "./EditorComponents";
+import { UserManagementRow } from "../admin/AdminComponents";
+import { useToast } from "../../components/ToastProvider";
+import { useDashboardSlug } from "../../components/url_slug";
+import FormSection from "../../components/FormSection";
+import Requests from "../../components/requests";
+import EditorSettings from "../../components/EditorSettings";
+
+const EditorDashboard = () => {
+  const router = useRouter();
+  const [editorName, setEditorName] = useState("Editor");
+  const [editorEmail, setEditorEmail] = useState("");
+  const [editorUsername, setEditorUsername] = useState("");
+  const [editorRole, setEditorRole] = useState("editor");
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<IUser[]>([]);
+  const [statsData, setStatsData] = useState<IAdminStats | null>(null);
+  const [notifications, setNotifications] = useState<INotification[]>([]);
+  const idToSlug = { Overview: "overview", Management: "management", RoleChange: "RoleChange", Requests: "requests", Calendar: "calendar", Kanban: "kanban", Settings: "settings" };
+  const { activeTab, handleTabChange } = useDashboardSlug(idToSlug, "Overview");
+
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [governanceMode, setGovernanceMode] = useState<string>("MODE_1");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [isRoleDropDownOpen, setIsRoleDropDownOpen] = useState(false);
+  const { showSuccess, showError } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const profileRes = await api.get("/auth/profile");
+        const user = profileRes.data.user;
+
+        setEditorName(user.name || user.username);
+        setEditorUsername(user.username);
+        setEditorEmail(user.email);
+        setEditorRole(user.role);
+
+        if (!["admin", "author", "editor"].includes(user.role)) {
+          router.push("/dashboard");
+          return;
+        }
+
+        const overviewRes = await api.get("/auth/overview");
+        setStatsData({
+          totalUsers: overviewRes.data.totalUsers,
+          activeUsers: overviewRes.data.activeUsers,
+          securityAlerts: overviewRes.data.securityAlerts,
+          systemUptime: overviewRes.data.systemUptime,
+        });
+
+        const usersRes = await api.get("/auth/admin/users");
+        setUsers(usersRes.data.users || []);
+
+        const welcomeMsg = `Welcome, ${user.name || user.username || 'Editor'}! Ready to refine content?`;
+        setNotifications([{
+          id: Date.now().toString(),
+          title: "Editorial Notice",
+          message: welcomeMsg,
+          time: "Just now",
+          isRead: false,
+        }]);
+
+        try {
+          const settingsRes = await api.get("/settings");
+          setGovernanceMode(settingsRes.data.governanceMode);
+        } catch (err) {
+          console.error("Failed to fetch settings", err);
+        }
+
+      } catch (err: unknown) {
+        const error = err as AxiosError;
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          router.push("/login");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [router]);
+
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      api.get("/auth/profile").then(res => {
+        const user = res.data.user;
+        setEditorName(user.name || user.username);
+        setEditorUsername(user.username);
+        setEditorEmail(user.email);
+      }).catch(() => { });
+    }
+  }, [refreshTrigger]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    showSuccess("You have been logged out successfully");
+    router.push("/");
+  };
+
+  const sidebarItems = [
+    { icon: <FiLayout />, label: "Overview", id: "Overview" },
+    { icon: <FiShield />, label: "Management", id: "Management" },
+    { icon: <FiFileText />, label: "Role Request", id: "RoleChange" },
+    { icon: <FiFileText />, label: "Requests", id: "Requests" },
+    { icon: <FiCalendar />, label: "Calendar", id: "Calendar" },
+    { icon: <BsFillKanbanFill />, label: "Kanban", id: "Kanban" },
+    { icon: <FiSettings />, label: "Settings", id: "Settings" },
+  ];
+
+  const stats = [
+    { title: "Total Readers", value: statsData?.totalUsers || "0", change: "+8%", icon: <FiUsers className="w-6 h-6" /> },
+    { title: "Engagement", value: "Verified", change: "Stable", icon: <FiActivity className="w-6 h-6" /> },
+  ];
+
+
+
+  return (
+    <DashboardLayout
+      title="EditorPanel"
+      sidebarItems={sidebarItems}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      userProfile={{
+        name: editorName,
+        email: editorEmail,
+        username: editorUsername,
+        role: editorRole === "admin" ? "Administrator" : (editorRole === "author" ? "Content Author" : "Content Editor"),
+      }}
+      notifications={notifications}
+      onLogout={handleLogout}
+      onEditProfile={() => setIsProfileModalOpen(true)}
+      accentColor="blue"
+      isScrollable={false}
+    >
+      <div className="h-full flex flex-col animate-in fade-in duration-500">
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader text="Loading editorial workspace..." />
+          </div>
+        ) : activeTab === "Overview" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold dark:text-white tracking-tight">Editorial Hub</h1>
+              <p className="text-xs md:text-sm text-gray-500">Review and moderate user interactions and content flow.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+              {stats.map((stat, i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 p-8 md:p-10 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm hover:translate-y-[-4px] transition-all">
+                  <div className="flex justify-between items-start mb-4 md:mb-6">
+                    <div className="p-3 md:p-4 bg-cyan-50 dark:bg-cyan-500/10 rounded-2xl text-cyan-600">
+                      {stat.icon}
+                    </div>
+                    <span className="text-[10px] font-bold px-3 py-1 bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 rounded-lg">
+                      {stat.change}
+                    </span>
+                  </div>
+                  <h3 className="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">{stat.title}</h3>
+                  <p className="text-2xl md:text-3xl font-bold dark:text-white">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-[32px] md:rounded-[48px] border border-white/50 dark:border-gray-700 p-8 md:p-16 text-center shadow-inner mt-8">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-xl text-cyan-500">
+                <FiType className="w-8 h-8 md:w-10 md:h-10" />
+              </div>
+              <h3 className="text-lg md:text-xl font-bold mb-4">Editorial Queue</h3>
+              <p className="text-sm text-gray-400 max-w-md mx-auto">The content moderation engine is being integrated. You&apos;ll soon be able to review pending posts and user comments here.</p>
+            </div>
+          </div>
+        ) : activeTab === "RoleChange" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <FormSection />
+          </div>
+        ) : activeTab === "Requests" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold dark:text-white tracking-tight">Access Requests</h1>
+              <p className="text-xs md:text-sm text-gray-500">Review pending role change applications.</p>
+            </div>
+            <Requests />
+          </div>
+        ) : activeTab === "Calendar" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <Calendar />
+          </div>
+        ) : activeTab === "Kanban" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <Kanban />
+          </div>
+        ) : activeTab === "Settings" ? (
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">
+            <EditorSettings />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div>
+                <h1 className="text-2xl font-bold dark:text-white">Editor Governance</h1>
+                <p className="text-sm text-gray-500">
+                  Manage permissions for users under your hierarchy.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 relative">
+                {/* ALL BUTTON */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsRoleDropDownOpen(!isRoleDropDownOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${roleFilter === "all"
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-blue-500"
+                      : "text-gray-500 hover:text-blue-500"
+                      }`}
+                  >
+                    {roleFilter.toUpperCase()}
+                    <FiChevronDown size={12}
+                      className={`transition-transform duration-200 ${isRoleDropDownOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {isRoleDropDownOpen && (
+                    <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 z-50">
+                      {["all", "editor", "user"].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => {
+                            setRoleFilter(r);
+                            setIsRoleDropDownOpen(false);
+                          }}
+                          className={`block w-full text-left px-3 py-2 text-[10px] font-bold hover:bg-gray-100 dark:hover:bg-gray-600 ${roleFilter === r
+                            ? "text-blue-500"
+                            : "text-gray-600 dark:text-gray-300"
+                            }`}
+                        >
+                          {r.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mb-8">
+              <div className="overflow-x-auto no-scrollbar">
+                <table className="w-full text-left">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {users
+                      .filter(u => {
+                        // Allow Editor and User roles. Explicitly exclude Admin/Author.
+                        const allowedRoles = ["editor", "user"];
+                        if (!allowedRoles.includes(u.role)) return false;
+
+                        // Apply the role filter
+                        if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+
+                        return true;
+                      })
+                      .map(u => (
+                        <UserManagementRow
+                          key={u._id}
+                          user={u}
+                          allowedRoles={governanceMode === "MODE_2" ? ["user", "editor"] : ["user"]}
+                          onRoleChange={async (id, role) => {
+                            try {
+                              await api.put(`/auth/admin/users/${id}/role`, { role });
+                              setUsers(prev => prev.map(user => user._id === id ? { ...user, role } : user));
+                              showSuccess("Role updated successfully");
+                            } catch {
+                              showError("Failed to update role");
+                            }
+                          }}
+                        />
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div >
+
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={{ name: editorName, username: editorUsername, email: editorEmail }}
+        onUpdate={() => setRefreshTrigger(prev => prev + 1)}
+      />
+    </DashboardLayout >
+  );
+};
+
+export default EditorDashboard;
