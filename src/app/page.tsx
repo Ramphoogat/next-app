@@ -239,34 +239,6 @@ export default function HomePage() {
                             View Live Demo
                         </button>
                     </FadeUp>
-
-                    {/* Hero Visual Mockup */}
-                    <FadeUp delay={0.6} className="mt-20 w-full perspective-1000">
-                        <motion.div
-                            animate={{ y: [0, -15, 0] }}
-                            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                            className="relative mx-auto max-w-4xl"
-                        >
-                            {/* Glow behind */}
-                            <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 dark:from-emerald-500/30 dark:to-cyan-500/30 rounded-[3rem] blur-3xl opacity-50"></div>
-
-                            {/* Dashboard Image / Mockup base */}
-                            <div className="relative bg-white/80 dark:bg-black/40 backdrop-blur-2xl rounded-[2.5rem] border border-gray-200 dark:border-white/10 overflow-hidden shadow-2xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 h-64 md:h-96 w-full flex flex-col transform rotate-x-6 scale-95 origin-bottom">
-                                <div className="h-12 border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center px-6 gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                                </div>
-                                <div className="flex-1 flex p-6 gap-6 opacity-80 dark:opacity-70">
-                                    <div className="w-1/4 h-full rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10"></div>
-                                    <div className="w-3/4 flex flex-col gap-6">
-                                        <div className="h-1/3 w-full rounded-2xl bg-gradient-to-r from-emerald-50 dark:from-emerald-500/20 to-transparent border border-emerald-100 dark:border-emerald-500/20"></div>
-                                        <div className="flex-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </FadeUp>
                 </section>
 
                 {/* Section 2: Role Switcher Showcase */}
