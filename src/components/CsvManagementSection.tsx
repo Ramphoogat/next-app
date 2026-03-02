@@ -1,7 +1,7 @@
 "use client";
 import { FiDownload, FiUpload } from "react-icons/fi";
-import { useToast } from "./ToastProvider";
-import type { IUser } from "../pages/admin/AdminComponents";
+import { useToast } from "@/components/ToastProvider";
+import type { IUser } from "@/types/dashboard";
 
 interface CsvManagementSectionProps {
     users: IUser[];

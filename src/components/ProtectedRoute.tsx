@@ -1,8 +1,8 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import type { UserRole } from '../utils/rolePermissions';
-import { decodeJwt } from '../utils/jwtUtils';
+import type { UserRole } from '@/utils/rolePermissions';
+import { decodeJwt } from '@/utils/jwtUtils';
 
 const ProtectedRoute = ({ allowedRoles, children }: { allowedRoles?: UserRole[], children: React.ReactNode }) => {
   const router = useRouter();

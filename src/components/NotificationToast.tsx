@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import {
   useNotifications,
   type Notification,
-} from "../context/NotificationContext";
+} from "@/context/NotificationContext";
 
 const NotificationToast: React.FC = () => {
   const { notifications, removeNotification } = useNotifications();
@@ -15,11 +15,19 @@ const NotificationToast: React.FC = () => {
       const latest = notifications[0];
       // Only show if it's "new" (less than 5 seconds old)
       if (new Date().getTime() - latest.timestamp.getTime() < 1000) {
-        setActiveToast(latest);
-        const timer = setTimeout(() => {
+        // Wrap state changes in setTimeout to avoid cascading renders
+        const initialTimer = setTimeout(() => {
+          setActiveToast(latest);
+        }, 0);
+
+        const removeTimer = setTimeout(() => {
           setActiveToast(null);
         }, 4000); // 4 seconds total (1s fade in/steady + 3s display)
-        return () => clearTimeout(timer);
+
+        return () => {
+          clearTimeout(initialTimer);
+          clearTimeout(removeTimer);
+        };
       }
     }
   }, [notifications]);

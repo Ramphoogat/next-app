@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiGithub, FiLinkedin, FiUsers } from 'react-icons/fi';
-import Loader from './Loader';
+import Loader from '@/components/Loader';
 
 interface TeamMember {
     id: string;

@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiLayout, FiEdit3, FiFeather, FiShield, FiChevronDown } from 'react-icons/fi';
-import type { UserRole } from '../utils/rolePermissions';
-import { getNavigationItems, getRoleDisplayName } from '../utils/rolePermissions';
-import { decodeJwt } from '../utils/jwtUtils';
+import type { UserRole } from '@/utils/rolePermissions';
+import { getNavigationItems, getRoleDisplayName } from '@/utils/rolePermissions';
+import { decodeJwt } from '@/utils/jwtUtils';
 
 
 const DashboardSwitcher: React.FC = () => {

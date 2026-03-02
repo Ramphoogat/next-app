@@ -2,8 +2,8 @@
 import React from 'react';
 import { useRouter } from "next/navigation";
 import { FiHome } from 'react-icons/fi';
-import LightRays from './LightRays';
-import { logActivity } from '../utils/activityLogger';
+import LightRays from '@/components/LightRays';
+import { logActivity } from '@/utils/activityLogger';
 
 const Error404: React.FC = () => {
     const router = useRouter();
@@ -49,7 +49,7 @@ const Error404: React.FC = () => {
                 <div className="max-w-md mx-auto p-8 rounded-[40px] bg-white/10 dark:bg-gray-800/40 backdrop-blur-2xl border border-white/20 dark:border-gray-700/50 shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                     <h2 className="text-3xl font-bold text-white mb-4">Lost in Space?</h2>
                     <p className="text-gray-400 mb-8 text-lg">
-                        The page you are looking for doesn't exist or has been moved to another dimension.
+                        The page you are looking for doesn&apos;t exist or has been moved to another dimension.
                     </p>
 
                     <button
@@ -63,7 +63,7 @@ const Error404: React.FC = () => {
 
                 {/* Decorative Quote */}
                 <div className="mt-12 text-emerald-500/50 italic text-sm font-medium">
-                    "Not all those who wander are lost... but you might be."
+                    &quot;Not all those who wander are lost... but you might be.&quot;
                 </div>
             </div>
 

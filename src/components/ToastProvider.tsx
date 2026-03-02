@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import Toast, { type ToastType } from './Toast';
-import { logActivity } from '../utils/activityLogger';
+import Toast, { type ToastType } from '@/components/Toast';
+import { logActivity } from '@/utils/activityLogger';
 
 interface ToastData {
   id: string;

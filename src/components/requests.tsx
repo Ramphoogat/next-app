@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiCheck, FiX, FiUser, FiClock } from 'react-icons/fi';
-import api from '../api/axios';
-import { useToast } from './ToastProvider';
-import { logActivity } from '../utils/activityLogger';
+import api from '@/api/axios';
+import { useToast } from '@/components/ToastProvider';
+import { logActivity } from '@/utils/activityLogger';
 import Image from 'next/image';
 
 interface IRequest {

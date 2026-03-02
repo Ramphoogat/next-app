@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import api from '@/api/axios';
 import axios from 'axios';
 import { useRouter, useSearchParams } from "next/navigation";
-import LightRays from './LightRays';
-import ThemeComponent from './ThemeComponent';
-import { useToast } from './ToastProvider';
+import LightRays from '@/components/LightRays';
+import ThemeComponent from '@/components/ThemeComponent';
+import { useToast } from '@/components/ToastProvider';
 import { logActivity } from '@/utils/activityLogger';
 
 const VerifyOtp: React.FC = () => {

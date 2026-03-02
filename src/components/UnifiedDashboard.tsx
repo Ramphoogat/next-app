@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import AdminDashboard from "./dashboards/AdminDashboard";
-import AuthorDashboard from "./dashboards/AuthorDashboard";
-import EditorDashboard from "./dashboards/EditorDashboard";
-import UserDashboard from "./dashboards/UserDashboard";
+import AdminDashboard from "@/components/dashboards/AdminDashboard";
+import AuthorDashboard from "@/components/dashboards/AuthorDashboard";
+import EditorDashboard from "@/components/dashboards/EditorDashboard";
+import UserDashboard from "@/components/dashboards/UserDashboard";
 
 const UnifiedDashboard = () => {
     const router = useRouter();

@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useEffect } from "react";
-import { useNotifications } from "../context/NotificationContext";
-import { logActivity } from "../utils/activityLogger";
+import { useNotifications } from "@/context/NotificationContext";
+import { logActivity } from "@/utils/activityLogger";
 import { FiX, FiBell, FiTrash2 } from "react-icons/fi";
 
 interface NotificationCenterProps {

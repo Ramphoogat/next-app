@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from "react";
 import { FiX, FiUser, FiMail, FiLock, FiPlus, FiShield } from "react-icons/fi";
-import api from "../api/axios";
-import { useToast } from "../components/ToastProvider";
-import { logActivity } from "../utils/activityLogger";
+import api from "@/api/axios";
+import { useToast } from "@/components/ToastProvider";
+import { logActivity } from "@/utils/activityLogger";
 
 interface CreateUserModalProps {
     isOpen: boolean;

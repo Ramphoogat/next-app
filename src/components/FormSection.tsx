@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FiFileText } from "react-icons/fi";
-import api from "../api/axios";
-import { useToast } from "./ToastProvider";
+import api from "@/api/axios";
+import { useToast } from "@/components/ToastProvider";
 import { AxiosError } from "axios";
-import { logActivity } from "../utils/activityLogger";
+import { logActivity } from "@/utils/activityLogger";
 
 const FormSection: React.FC = () => {
     const { showSuccess, showError } = useToast();

@@ -1,7 +1,7 @@
 "use client";
 import { FiSun, FiMoon, FiBox, FiCommand, FiTerminal } from 'react-icons/fi';
-import { useTheme } from '../context/themeContext';
-import { logActivity } from '../utils/activityLogger';
+import { useTheme } from '@/context/themeContext';
+import { logActivity } from '@/utils/activityLogger';
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();

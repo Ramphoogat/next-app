@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { useToast } from './ToastProvider';
-import { fetchCalendarData, saveCalendarData, type CalendarPayload } from '../api/calendar';
+import { useToast } from '@/components/ToastProvider';
+import { fetchCalendarData, saveCalendarData, type CalendarPayload } from '@/api/calendar';
+import { DragDropContext, Droppable, Draggable, DropResult, DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps, DroppableProps } from 'react-beautiful-dnd';
 
 import {
     FiPlus,
@@ -20,6 +22,20 @@ import {
 
 } from 'react-icons/fi';
 import { logActivity } from '../utils/activityLogger';
+
+// --- React 18 Strict Mode Fix for react-beautiful-dnd ---
+export const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
+    const [enabled, setEnabled] = useState(false);
+    useEffect(() => {
+        const animation = requestAnimationFrame(() => setEnabled(true));
+        return () => {
+            cancelAnimationFrame(animation);
+            setEnabled(false);
+        };
+    }, []);
+    if (!enabled) return null;
+    return <Droppable {...props}>{children}</Droppable>;
+};
 
 // --- Types ---
 
@@ -173,14 +189,27 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ onDelete }) => {
 };
 
 
-export const TaskCard: React.FC<{ task: Task; onDelete: () => void; onContextMenu: (e: React.MouseEvent) => void; readOnly?: boolean }> = ({ task, onDelete, onContextMenu, readOnly }) => {
-    return (
+export const TaskCard: React.FC<{
+    task: Task;
+    onDelete: () => void;
+    onContextMenu: (e: React.MouseEvent) => void;
+    readOnly?: boolean;
+    innerRef?: (element: HTMLElement | null) => void;
+    draggableProps?: DraggableProvidedDraggableProps;
+    dragHandleProps?: DraggableProvidedDragHandleProps | null;
+    isDragging?: boolean;
+}> = ({ task, onDelete, onContextMenu, readOnly, innerRef, draggableProps, dragHandleProps, isDragging }) => {
+    const cardContent = (
         <div
+            ref={innerRef}
+            {...draggableProps}
+            {...dragHandleProps}
             onContextMenu={readOnly ? undefined : onContextMenu}
             className={`
             group bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm 
             ${readOnly ? '' : 'hover:shadow-md hover:-translate-y-1 hover:border-indigo-300 dark:hover:border-indigo-600'}
             transition-all duration-200 mb-3 select-none relative
+            ${isDragging ? 'shadow-xl rotate-2 ring-2 ring-indigo-500 z-[9999]' : ''}
           `}
         >
             {/* Priority Line Indicator */}
@@ -278,6 +307,12 @@ export const TaskCard: React.FC<{ task: Task; onDelete: () => void; onContextMen
             </div>
         </div>
     );
+
+    // When dragging, portal the card to document.body to escape overflow/scroll containers
+    if (isDragging && typeof document !== 'undefined') {
+        return createPortal(cardContent, document.body);
+    }
+    return cardContent;
 };
 
 // --- Add Column Modal ---
@@ -517,6 +552,12 @@ const Kanban: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
     const [data, setData] = useState<BoardData>(initialData);
     const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => setIsMounted(true), 0);
+        return () => clearTimeout(timeout);
+    }, []);
 
     // Calendar State
     const [calendarData, setCalendarData] = useState<CalendarPayload>({ events: [], ranges: [] });
@@ -548,6 +589,72 @@ const Kanban: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
                 behavior: 'smooth'
             });
         }
+    };
+
+    const onDragEnd = (result: DropResult) => {
+        const { destination, source, draggableId } = result;
+
+        if (!destination) {
+            return;
+        }
+
+        if (
+            destination.droppableId === source.droppableId &&
+            destination.index === source.index
+        ) {
+            return;
+        }
+
+        const sourceColumn = data.columns[source.droppableId];
+        const destinationColumn = data.columns[destination.droppableId];
+
+        // Moving within the same column
+        if (sourceColumn === destinationColumn) {
+            const newTaskIds = Array.from(sourceColumn.taskIds);
+            newTaskIds.splice(source.index, 1);
+            newTaskIds.splice(destination.index, 0, draggableId);
+
+            const newColumn = {
+                ...sourceColumn,
+                taskIds: newTaskIds,
+            };
+
+            setData(prev => ({
+                ...prev,
+                columns: {
+                    ...prev.columns,
+                    [newColumn.id]: newColumn,
+                },
+            }));
+            return;
+        }
+
+        // Moving from one column to another
+        const sourceTaskIds = Array.from(sourceColumn.taskIds);
+        sourceTaskIds.splice(source.index, 1);
+        const newSource = {
+            ...sourceColumn,
+            taskIds: sourceTaskIds,
+        };
+
+        const destinationTaskIds = Array.from(destinationColumn.taskIds);
+        destinationTaskIds.splice(destination.index, 0, draggableId);
+        const newDestination = {
+            ...destinationColumn,
+            taskIds: destinationTaskIds,
+        };
+
+        setData(prev => ({
+            ...prev,
+            columns: {
+                ...prev.columns,
+                [newSource.id]: newSource,
+                [newDestination.id]: newDestination,
+            },
+        }));
+
+        const taskName = data.tasks[draggableId]?.content || 'Task';
+        logActivity("UPDATE", "Kanban", `Moved task "${taskName}" to ${newDestination.title}`);
     };
 
     // Task Modal State
@@ -855,68 +962,151 @@ const Kanban: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
                     ref={scrollContainerRef}
                     className="h-full overflow-x-auto pb-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                    <div className="flex h-full space-x-6 min-w-max px-1">
-                        {data.columnOrder.map((columnId) => {
-                            const column = data.columns[columnId];
-                            const tasks = column.taskIds.map((taskId) => data.tasks[taskId]);
+                    {isMounted ? (
+                        <DragDropContext onDragEnd={onDragEnd}>
+                            <div className="flex h-full space-x-6 min-w-max px-1">
+                                {data.columnOrder.map((columnId) => {
+                                    const column = data.columns[columnId];
+                                    const tasks = column.taskIds.map((taskId) => data.tasks[taskId]);
 
-                            return (
-                                <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full rounded-2xl bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-                                    {/* Column Header */}
-                                    {(() => {
-                                        const colorObj = COLUMN_COLORS.find(c => c.value === (column.color || 'gray')) || COLUMN_COLORS[6];
-                                        return (
-                                            <div className={`p-4 flex items-center justify-between sticky top-0 z-10 rounded-t-2xl border-b ${colorObj.headerBg} ${colorObj.border} mb-3 backdrop-blur-sm`}>
-                                                <div className="flex items-center space-x-2 w-full">
-                                                    <h3 className={`font-bold text-sm truncate ${colorObj.text}`}>{column.title}</h3>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold bg-white/60 dark:bg-black/20 ${colorObj.text}`}>
-                                                        {tasks.length}
-                                                    </span>
-                                                </div>
-                                                {!readOnly && (
-                                                    <div className="relative pl-2">
-                                                        <DropdownMenu onDelete={() => handleDeleteColumn(column.id)} />
+                                    return (
+                                        <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full rounded-2xl bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+                                            {/* Column Header */}
+                                            {(() => {
+                                                const colorObj = COLUMN_COLORS.find(c => c.value === (column.color || 'gray')) || COLUMN_COLORS[6];
+                                                return (
+                                                    <div className={`p-4 flex items-center justify-between sticky top-0 z-10 rounded-t-2xl border-b ${colorObj.headerBg} ${colorObj.border} mb-3 backdrop-blur-sm`}>
+                                                        <div className="flex items-center space-x-2 w-full">
+                                                            <h3 className={`font-bold text-sm truncate ${colorObj.text}`}>{column.title}</h3>
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold bg-white/60 dark:bg-black/20 ${colorObj.text}`}>
+                                                                {tasks.length}
+                                                            </span>
+                                                        </div>
+                                                        {!readOnly && (
+                                                            <div className="relative pl-2">
+                                                                <DropdownMenu onDelete={() => handleDeleteColumn(column.id)} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* Task List */}
+                                            <StrictModeDroppable droppableId={column.id} isDropDisabled={!!readOnly} isCombineEnabled={false} ignoreContainerClipping={false}>
+                                                {(provided, snapshot) => (
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.droppableProps}
+                                                        className={`flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar-light transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50 dark:bg-indigo-900/40 rounded-xl ring-2 ring-indigo-500/20' : ''}`}
+                                                    >
+                                                        <div className="min-h-[100px]">
+                                                            {tasks.map((task, index) => (
+                                                                <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!!readOnly}>
+                                                                    {(provided, snapshot) => (
+                                                                        <TaskCard
+                                                                            innerRef={provided.innerRef}
+                                                                            draggableProps={provided.draggableProps}
+                                                                            dragHandleProps={provided.dragHandleProps}
+                                                                            isDragging={snapshot.isDragging}
+                                                                            task={task}
+                                                                            onDelete={() => handleDeleteTask(column.id, task.id)}
+                                                                            onContextMenu={(e) => handleContextMenu(e, task.id, task.content, column.id)}
+                                                                            readOnly={readOnly}
+                                                                        />
+                                                                    )}
+                                                                </Draggable>
+                                                            ))}
+                                                            {provided.placeholder}
+                                                            {tasks.length === 0 && !snapshot.isDraggingOver && (
+                                                                <div className="h-24 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl mt-2">
+                                                                    <span className="text-xs">No tasks yet</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        );
-                                    })()}
+                                            </StrictModeDroppable>
 
-                                    {/* Task List */}
-                                    <div className="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar-light">
-                                        <div className="min-h-[100px]">
-                                            {tasks.map((task) => (
-                                                <TaskCard
-                                                    key={task.id}
-                                                    task={task}
-                                                    onDelete={() => handleDeleteTask(column.id, task.id)}
-                                                    onContextMenu={(e) => handleContextMenu(e, task.id, task.content, column.id)}
-                                                    readOnly={readOnly}
-                                                />
-                                            ))}
-                                            {tasks.length === 0 && (
-                                                <div className="h-24 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                                                    <span className="text-xs">No tasks yet</span>
+                                            {/* Footer - Add Task button */}
+                                            {!readOnly && (
+                                                <div className="p-3 mt-auto">
+                                                    <button
+                                                        onClick={() => openAddTaskModal(column.id)}
+                                                        className="w-full py-2 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-gray-300 dark:hover:border-gray-600 border-dashed"
+                                                    >
+                                                        <FiPlus className="mr-1.5" /> Add card
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
+                                    );
+                                })}
+                            </div>
+                        </DragDropContext>
+                    ) : (
+                        <div className="flex h-full space-x-6 min-w-max px-1">
+                            {data.columnOrder.map((columnId) => {
+                                const column = data.columns[columnId];
+                                const tasks = column.taskIds.map((taskId) => data.tasks[taskId]);
 
-                                    {/* Footer - Add Task button */}
-                                    {!readOnly && (
-                                        <div className="p-3 mt-auto">
-                                            <button
-                                                onClick={() => openAddTaskModal(column.id)}
-                                                className="w-full py-2 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-gray-300 dark:hover:border-gray-600 border-dashed"
-                                            >
-                                                <FiPlus className="mr-1.5" /> Add card
-                                            </button>
+                                return (
+                                    <div key={column.id} className="w-80 flex-shrink-0 flex flex-col h-full rounded-2xl bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+                                        {/* Column Header */}
+                                        {(() => {
+                                            const colorObj = COLUMN_COLORS.find(c => c.value === (column.color || 'gray')) || COLUMN_COLORS[6];
+                                            return (
+                                                <div className={`p-4 flex items-center justify-between sticky top-0 z-10 rounded-t-2xl border-b ${colorObj.headerBg} ${colorObj.border} mb-3 backdrop-blur-sm`}>
+                                                    <div className="flex items-center space-x-2 w-full">
+                                                        <h3 className={`font-bold text-sm truncate ${colorObj.text}`}>{column.title}</h3>
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold bg-white/60 dark:bg-black/20 ${colorObj.text}`}>
+                                                            {tasks.length}
+                                                        </span>
+                                                    </div>
+                                                    {!readOnly && (
+                                                        <div className="relative pl-2">
+                                                            <DropdownMenu onDelete={() => handleDeleteColumn(column.id)} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Task List */}
+                                        <div className="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar-light">
+                                            <div className="min-h-[100px]">
+                                                {tasks.map((task) => (
+                                                    <TaskCard
+                                                        key={task.id}
+                                                        task={task}
+                                                        onDelete={() => handleDeleteTask(column.id, task.id)}
+                                                        onContextMenu={(e) => handleContextMenu(e, task.id, task.content, column.id)}
+                                                        readOnly={readOnly}
+                                                    />
+                                                ))}
+                                                {tasks.length === 0 && (
+                                                    <div className="h-24 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl mt-2">
+                                                        <span className="text-xs">No tasks yet</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+
+                                        {/* Footer - Add Task button */}
+                                        {!readOnly && (
+                                            <div className="p-3 mt-auto">
+                                                <button
+                                                    onClick={() => openAddTaskModal(column.id)}
+                                                    className="w-full py-2 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-gray-300 dark:hover:border-gray-600 border-dashed"
+                                                >
+                                                    <FiPlus className="mr-1.5" /> Add card
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

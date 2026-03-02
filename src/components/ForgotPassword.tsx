@@ -1,11 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import api from '../api/axios';
+import api from '@/api/axios';
 import axios from 'axios';
 import { useRouter } from "next/navigation";
-import LiquidChrome from './LightRays';
-import ThemeComponent from './ThemeComponent';
-import { logActivity } from '../utils/activityLogger';
+import LiquidChrome from '@/components/LightRays';
+import ThemeComponent from '@/components/ThemeComponent';
+import { logActivity } from '@/utils/activityLogger';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');

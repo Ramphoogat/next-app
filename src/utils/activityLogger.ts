@@ -1,5 +1,5 @@
 "use client";
-import api from '../api/axios';
+import api from '@/api/axios';
 
 export const logActivity = async (action: string, module: string, description: string) => {
   try {

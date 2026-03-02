@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { FiX, FiUser, FiMail, FiLock, FiSave, FiAlertCircle } from "react-icons/fi";
-import api from "../api/axios";
-import { useToast } from "../components/ToastProvider";
-import { logActivity } from "../utils/activityLogger";
+import api from "@/api/axios";
+import { useToast } from "@/components/ToastProvider";
+import { logActivity } from "@/utils/activityLogger";
 
 interface ProfileEditModalProps {
   isOpen: boolean;

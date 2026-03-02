@@ -4,8 +4,8 @@ import api from "@/api/axios";
 import axios from "axios";
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
-import LightRays from "./LightRays";
-import ThemeComponent from "./ThemeComponent";
+import LightRays from "@/components/LightRays";
+import ThemeComponent from "@/components/ThemeComponent";
 
 const ResetPassword = () => {
     const router = useRouter();

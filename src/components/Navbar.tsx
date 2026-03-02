@@ -1,10 +1,10 @@
 "use client";
 import { FiMenu, FiBell, FiSearch } from "react-icons/fi";
 import { useState, useEffect } from "react";
-import ThemeComponent from "./ThemeComponent";
-import DashboardSwitcher from "./DashboardSwitcher";
-import NotificationCenter from "./NotificationCenter";
-import { useNotifications } from "../context/NotificationContext";
+import ThemeComponent from "@/components/ThemeComponent";
+import DashboardSwitcher from "@/components/DashboardSwitcher";
+import NotificationCenter from "@/components/NotificationCenter";
+import { useNotifications } from "@/context/NotificationContext";
 
 interface NavbarProps {
     setIsMobileMenuOpen: (isOpen: boolean) => void;

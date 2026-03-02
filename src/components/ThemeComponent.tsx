@@ -1,7 +1,7 @@
 "use client";
 import React, { useSyncExternalStore } from 'react';
 import { FiSun, FiMoon, FiBox, FiCommand, FiTerminal } from 'react-icons/fi';
-import { useTheme } from '../context/themeContext';
+import { useTheme } from '@/context/themeContext';
 
 const ThemeComponent: React.FC = () => {
     const { theme: activeTheme, setTheme, enabledThemes: activeEnabledThemes } = useTheme();

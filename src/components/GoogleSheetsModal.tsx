@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FiX, FiDatabase, FiUpload, FiRefreshCw } from "react-icons/fi";
 import { AxiosError } from "axios";
-import api from "../api/axios";
-import { useToast } from "./ToastProvider";
-import { logActivity } from "../utils/activityLogger";
+import api from "@/api/axios";
+import { useToast } from "@/components/ToastProvider";
+import { logActivity } from "@/utils/activityLogger";
 
 // Basic Modal if not existing, but let me check if there is a Modal component.
 // checking previous file lists... I saw `ProfileEditModal` and `CreateUserModal`.
@@ -50,7 +50,7 @@ const GoogleSheetsModal = ({
     } finally {
       setStatusLoading(false);
     }
-  }, [navigate, showError]);
+  }, [router, showError]);
 
   useEffect(() => {
     if (isOpen) {
@@ -161,7 +161,7 @@ const GoogleSheetsModal = ({
               </button>
             </div>
             <p className="text-[10px] text-gray-400">
-              Ensure the service account email has "Editor" access to this
+              Ensure the service account email has &quot;Editor&quot; access to this
               sheet.
             </p>
           </div>

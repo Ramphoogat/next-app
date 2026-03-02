@@ -1,5 +1,5 @@
-import api from './axios';
-import type { CalendarEvent, DateRange } from '../components/calendar_ui/calendar-context';
+import api from '@/api/axios';
+import type { CalendarEvent, DateRange } from '@/components/calendar_ui/calendar-context';
 
 export type CalendarPayload = {
     events: CalendarEvent[];

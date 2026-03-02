@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import api from "../api/axios";
+import api from "@/api/axios";
 import { FiCpu, FiShield, FiLock, FiCheckCircle, FiTerminal, FiRefreshCw } from "react-icons/fi";
-import { useToast } from "./ToastProvider";
-import { useTheme } from "../context/themeContext";
-import { logActivity } from "../utils/activityLogger";
+import { useToast } from "@/components/ToastProvider";
+import { useTheme } from "@/context/themeContext";
+import { logActivity } from "@/utils/activityLogger";
 
 interface SystemSettings {
   roleSystemEnabled: boolean;
