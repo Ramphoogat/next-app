@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
-import { FiChevronLeft, FiEdit, FiLogOut, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiEdit, FiLogOut, FiX, FiAlertTriangle } from "react-icons/fi";
 
 interface SidebarItemProps {
     icon: React.ReactNode;
@@ -85,6 +85,12 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({
     setIsSidebarOpen,
 }) => {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
+
+    const confirmSignOut = () => {
+        setIsProfileMenuOpen(false);
+        setIsSignOutDialogOpen(true);
+    };
 
     const accentClass =
         {
@@ -103,6 +109,73 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({
 
     return (
         <>
+            {/* ── Sign Out Confirmation Dialog ───────────────────────────────── */}
+            {isSignOutDialogOpen && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                    aria-modal="true"
+                    role="dialog"
+                >
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => setIsSignOutDialogOpen(false)}
+                    />
+
+                    {/* Dialog card */}
+                    <div className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700/60 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+                        {/* Top accent bar */}
+                        <div className="h-1.5 w-full bg-gradient-to-r from-red-500 via-rose-500 to-pink-500" />
+
+                        <div className="px-8 pt-8 pb-6 space-y-5">
+                            {/* Icon + heading */}
+                            <div className="flex flex-col items-center text-center space-y-4">
+                                <div className="size-16 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-100 dark:border-red-500/20 shadow-lg shadow-red-500/10">
+                                    <FiLogOut className="w-7 h-7 text-red-500" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                                        Sign Out?
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                        You&apos;re about to sign out of your account.<br />
+                                        <span className="font-semibold text-gray-600 dark:text-gray-300">Any unsaved changes will be lost.</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Warning chip */}
+                            <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl">
+                                <FiAlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                    You will be redirected to the Landing Page.
+                                </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="grid grid-cols-2 gap-3 pt-1">
+                                <button
+                                    onClick={() => setIsSignOutDialogOpen(false)}
+                                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border-2 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-black text-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-600 transition-all duration-200 active:scale-95"
+                                >
+                                    <FiX className="w-4 h-4" />
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsSignOutDialogOpen(false);
+                                        onLogout();
+                                    }}
+                                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-black text-sm shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:from-red-600 hover:to-rose-700 transition-all duration-200 active:scale-95"
+                                >
+                                    <FiLogOut className="w-4 h-4" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Sidebar - Desktop */}
             <aside
                 className={`hidden lg:flex flex-col bg-white dark:bg-gray-800 transition-all duration-500 ease-in-out z-40 relative ${isSidebarOpen ? "w-60" : "w-24"
@@ -154,25 +227,32 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({
                         className={`cursor-pointer group relative flex flex-col p-2 rounded-2xl transition-all duration-300 ${isProfileMenuOpen ? "bg-gray-100 dark:bg-gray-700" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}
                     >
                         {isProfileMenuOpen && (
-                            <div className="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-2 animate-in slide-in-from-bottom-2 duration-200">
+                            <div
+                                className={`absolute bottom-full mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-2 animate-in slide-in-from-bottom-2 duration-200 z-50 ${isSidebarOpen
+                                    ? "left-0 right-0"        // full-width of the expanded card
+                                    : "left-0 w-52"          // fixed width, overflows to the right
+                                    }`}
+                            >
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onEditProfile();
                                         setIsProfileMenuOpen(false);
                                     }}
-                                    className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-600 rounded-xl transition-all"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-600 rounded-xl transition-all"
                                 >
-                                    <FiEdit className="mr-3" /> Edit Profile
+                                    <FiEdit className="shrink-0 w-4 h-4" />
+                                    <span className="whitespace-nowrap">Edit Profile</span>
                                 </button>
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onLogout();
+                                        confirmSignOut();
                                     }}
-                                    className="w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
                                 >
-                                    <FiLogOut className="mr-3" /> Sign Out
+                                    <FiLogOut className="shrink-0 w-4 h-4" />
+                                    <span className="whitespace-nowrap">Sign Out</span>
                                 </button>
                             </div>
                         )}
@@ -262,7 +342,7 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({
                                 <FiEdit className="mr-2" /> Edit
                             </button>
                             <button
-                                onClick={onLogout}
+                                onClick={confirmSignOut}
                                 className="flex items-center justify-center p-2 text-xs font-bold bg-red-50 text-red-600 rounded-xl hover:bg-red-100"
                             >
                                 <FiLogOut className="mr-2" /> Exit

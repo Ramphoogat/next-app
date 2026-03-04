@@ -137,7 +137,7 @@ export const CalendarMonthView = () => {
                             className={cn(
                                 'p-1 md:p-2 text-sm border-r border-b border-gray-200 dark:border-gray-800 text-muted-foreground overflow-y-auto overflow-x-hidden no-scrollbar cursor-pointer transition-all duration-300 relative select-none min-h-[80px]',
                                 'group hover:z-30 hover:-translate-y-1.5 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] hover:bg-white dark:hover:bg-gray-800 hover:border-transparent hover:rounded-2xl',
-                                !isSameMonth(date, _date) && 'text-muted-foreground/50',
+                                !isSameMonth(date, _date) && 'bg-gray-100/60 dark:bg-gray-900/60 opacity-40 pointer-events-none',
                                 isSameDay(date, _date) && !inRange && 'bg-muted/10',
                                 'flex flex-col gap-1',
                                 (toShowRanges.length === 0 && toShowEvents.length === 0) ? 'justify-center' : 'justify-start'
@@ -148,7 +148,9 @@ export const CalendarMonthView = () => {
                                 <span
                                     className={cn(
                                         "h-6 min-w-[24px] flex items-center justify-center px-1 rounded-full transition-all duration-300 font-medium text-xs z-10",
-                                        "group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md group-hover:scale-110",
+                                        !isSameMonth(date, _date)
+                                            ? "text-gray-400 dark:text-gray-600"
+                                            : "group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md group-hover:scale-110",
                                         isToday(_date) ? "bg-emerald-500 text-white" :
                                             isSameDay(date, _date) ? "bg-primary/20 text-primary" : ""
                                     )}

@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const googleClient = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -67,11 +68,12 @@ export async function GET(req: NextRequest) {
     let user = await User.findOne({ email: data.email });
 
     if (!user) {
+      const hashedGoogleId = await bcrypt.hash(data.id as string, 12);
       user = new User({
         name: data.name,
         email: data.email,
         username: data.email.split("@")[0] + Math.random().toString(36).substring(7),
-        googleId: data.id,
+        googleId: hashedGoogleId,
         isVerified: true,
         role: "user",
         password: "social-login-" + Math.random().toString(36),
@@ -80,7 +82,7 @@ export async function GET(req: NextRequest) {
       });
       await user.save();
     } else {
-      if (!user.googleId) user.googleId = data.id as string;
+      if (!user.googleId) user.googleId = await bcrypt.hash(data.id as string, 12);
       if (tokens.access_token) user.googleAccessToken = tokens.access_token;
       if (tokens.refresh_token) user.googleRefreshToken = tokens.refresh_token;
       await user.save();
@@ -102,8 +104,27 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Google Auth Error:", error);
-    return new NextResponse(getLoaderPage(`${CLIENT_URL}/login?error=Google login failed`), {
+    // Log the full error to the server terminal so we can diagnose it
+    console.error("━━━ Google OAuth Error ━━━");
+    if (error instanceof Error) {
+      console.error("Message:", error.message);
+      console.error("Stack:", error.stack);
+    }
+    // If it's a Google API error response it may have extra data
+    const apiErr = error as { response?: { status?: number; data?: unknown }; code?: string };
+    if (apiErr.response) {
+      console.error("Status:", apiErr.response.status);
+      console.error("Data:", JSON.stringify(apiErr.response.data, null, 2));
+    }
+    if (apiErr.code) console.error("Code:", apiErr.code);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    const displayMsg = process.env.NODE_ENV === "development"
+      ? `Google login failed: ${errorMsg}`
+      : "Google login failed";
+
+    return new NextResponse(getLoaderPage(`${CLIENT_URL}/login?error=${encodeURIComponent(displayMsg)}`), {
       headers: { 'Content-Type': 'text/html' }
     });
   }

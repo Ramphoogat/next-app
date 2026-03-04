@@ -27,14 +27,15 @@ const UserDashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [notifications, setNotifications] = useState<INotification[]>([]);
     const idToSlug = {
-        Overview: "Overview",
-        UserManagement: "UserManagement",
-        RoleChange: "RoleChange",
+        Overview: "overview",
+        UserManagement: "management",
+        RoleChange: "role-change",
         Calendar: "calendar",
         Kanban: "kanban",
         Settings: "settings",
-    };
-    const { activeTab, handleTabChange } = useDashboardSlug(idToSlug, "Overview");
+    } as const;
+    const { activeTab, activeSubSlug, handleTabChange, setSubSlug, clearSubSlug } = useDashboardSlug(idToSlug, "Overview");
+    void activeSubSlug; void setSubSlug; void clearSubSlug; // available for sub-slug features
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [users, setUsers] = useState<IUser[]>([]);

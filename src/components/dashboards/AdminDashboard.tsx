@@ -26,7 +26,8 @@ import CreateUserModal from "@/components/CreateUserModal";
 import Settings from "@/components/AdminSettings";
 import Kanban from "@/components/Kanban";
 import Calendar from "@/components/calendar_ui/Calendar";
-import Chats from "@/components/Chats";
+import Chats from "@/components/chats/Chats";
+import N8nWorkflow from "@/components/workflow/Workflow";
 import { useToast } from "@/components/ToastProvider";
 import { logActivity } from "@/utils/activityLogger";
 import { useDashboardSlug } from "@/components/url_slug";
@@ -35,17 +36,19 @@ import {
 } from "./AdminComponents";
 import { type IUser, type IAdminStats } from "@/types/dashboard";
 import { BsFillKanbanFill } from "react-icons/bs";
+import { TbArrowsExchange2 } from "react-icons/tb";
 
 const idToSlug = {
     Overview: "overview",
     UserManagement: "management",
     Settings: "settings",
-    Form: "Form",
+    Form: "form",
     Requests: "requests",
     Chats: "chats",
     Calendar: "calendar",
     Kanban: "kanban",
-};
+    N8nWorkflow: "n8n",
+} as const;
 
 const chartDataMap: Record<string, { label: string; value: number }[]> = {
     "Last 7 Days": [
@@ -102,7 +105,8 @@ const AdminDashboard = () => {
     const currentChartData = chartDataMap[timeRange] || chartDataMap["Last 7 Days"];
     const maxChartValue = Math.max(...currentChartData.map(d => d.value), 1);
 
-    const { activeTab, handleTabChange } = useDashboardSlug(idToSlug, "Overview");
+    const { activeTab, activeSubSlug, handleTabChange, setSubSlug, clearSubSlug } = useDashboardSlug(idToSlug, "Overview");
+    void activeSubSlug; void setSubSlug; void clearSubSlug; // available for sub-slug features
 
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
@@ -257,6 +261,7 @@ const AdminDashboard = () => {
         { icon: <FiLayout />, label: "Role Request Form", id: "Form" },
         { icon: <FiShield />, label: "Requests", id: "Requests" },
         { icon: <FiMessageSquare />, label: "Chats", id: "Chats" },
+        { icon: <TbArrowsExchange2 />, label: "n8n Workflow", id: "N8nWorkflow" },
         { icon: <FiCalendar />, label: "Calendar", id: "Calendar" },
         { icon: <BsFillKanbanFill />, label: "Kanban", id: "Kanban" },
         { icon: <FiSettings />, label: "Settings", id: "Settings" },
@@ -600,8 +605,12 @@ const AdminDashboard = () => {
 
 
                 ) : activeTab === "Chats" ? (
-                    <div className="flex-1 h-full overflow-y-auto no-scrollbar space-y-8">
+                    <div className="flex-1 h-full overflow-hidden">
                         <Chats />
+                    </div>
+                ) : activeTab === "N8nWorkflow" ? (
+                    <div className="flex-1 overflow-y-auto no-scrollbar">
+                        <N8nWorkflow />
                     </div>
                 ) : activeTab === "Calendar" ? (
                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-8">

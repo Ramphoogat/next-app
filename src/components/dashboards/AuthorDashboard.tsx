@@ -42,8 +42,9 @@ const AuthorDashboard = () => {
     const [users, setUsers] = useState<IUser[]>([]);
     const [statsData, setStatsData] = useState<IAdminStats | null>(null);
     const [notifications, setNotifications] = useState<INotification[]>([]);
-    const idToSlug = { Overview: "overview", Management: "management", RoleChange: "RoleChange", Requests: "requests", Calendar: "calendar", Kanban: "kanban", Settings: "settings" };
-    const { activeTab, handleTabChange } = useDashboardSlug(idToSlug, "Overview");
+    const idToSlug = { Overview: "overview", Management: "management", RoleChange: "role-change", Requests: "requests", Calendar: "calendar", Kanban: "kanban", Settings: "settings" } as const;
+    const { activeTab, activeSubSlug, handleTabChange, setSubSlug, clearSubSlug } = useDashboardSlug(idToSlug, "Overview");
+    void activeSubSlug; void setSubSlug; void clearSubSlug; // available for sub-slug features
 
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
@@ -78,11 +79,12 @@ export async function GET(req: NextRequest) {
     let user = await User.findOne({ email: primaryEmail });
 
     if (!user) {
+      const hashedGithubId = await bcrypt.hash(userData.id.toString(), 12);
       user = new User({
         name: userData.name || userData.login,
         email: primaryEmail,
         username: userData.login || primaryEmail.split("@")[0] + Math.random().toString(36).substring(7),
-        githubId: userData.id.toString(),
+        githubId: hashedGithubId,
         isVerified: true,
         role: "user",
         password: "social-login-" + Math.random().toString(36),
@@ -90,7 +92,8 @@ export async function GET(req: NextRequest) {
       await user.save();
     } else {
       if (!user.githubId) {
-        user.githubId = userData.id.toString();
+        const hashedGithubId = await bcrypt.hash(userData.id.toString(), 12);
+        user.githubId = hashedGithubId;
         await user.save();
       }
     }

@@ -26,7 +26,7 @@ import CreateUserModal from "../../components/CreateUserModal";
 import Settings from "../../components/AdminSettings";
 import Kanban from "../../components/Kanban";
 import Calendar from "../../components/calendar_ui/Calendar";
-import Chats from "../../components/Chats";
+import Chats from "../../components/chats/Chats";
 import { useToast } from "../../components/ToastProvider";
 import { logActivity } from "../../utils/activityLogger";
 

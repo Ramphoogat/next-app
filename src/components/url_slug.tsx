@@ -1,51 +1,124 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 /**
- * Custom hook to manage dashboard tab synchronization with URL slugs.
- * @param idToSlug Mapping of Tab IDs to URL path segments (slugs)
- * @param defaultId The default Tab ID to use if no slug is present or it's invalid
+ * Custom hook to manage dashboard tab + sub-state synchronization with URL slugs.
+ *
+ * URL structure: /dashboard/{tab-slug}/{sub-slug?}
+ *   e.g. /dashboard/overview
+ *        /dashboard/overview/search
+ *        /dashboard/management/search
+ *
+ * @param idToSlug  Mapping of Tab IDs → URL path segments (slugs). All slugs MUST be lowercase.
+ * @param defaultId The default Tab ID when no slug is present or slug is invalid.
  */
 export function useDashboardSlug<T extends string>(
     idToSlug: Record<T, string>,
     defaultId: T
 ) {
     const router = useRouter();
-    const { section } = useParams<{ section?: string | string[] }>();
-    const sectionSlug = Array.isArray(section) ? section[0] : section;
-    const [activeTab, setActiveTab] = useState<T>(defaultId);
+    const params = useParams<{ section?: string | string[] }>();
 
-    // Memoize slugToId to prevent unnecessary recalculations
-    const slugToId = useMemo(() => {
-        return Object.fromEntries(
-            Object.entries(idToSlug).map(([k, v]) => [(v as string).toLowerCase(), k as T])
-        ) as Record<string, T>;
-    }, [idToSlug]);
+    // Parse the catch-all `[[...section]]` segments
+    const segments = Array.isArray(params.section)
+        ? params.section
+        : params.section
+            ? [params.section]
+            : [];
 
-    // Sync activeTab with URL during render to avoid cascading updates in useEffect
-    const mapped = sectionSlug ? slugToId[sectionSlug.toLowerCase()] : undefined;
-    if (mapped && mapped !== activeTab) {
-        setActiveTab(mapped);
+    const tabSlug = segments[0]?.toLowerCase() ?? "";
+    const subSlug = segments[1]?.toLowerCase() ?? "";
+
+    // Build slug → id reverse map
+    const slugToId = useMemo(
+        () =>
+            Object.fromEntries(
+                Object.entries(idToSlug).map(([k, v]) => [
+                    (v as string).toLowerCase(),
+                    k as T,
+                ])
+            ) as Record<string, T>,
+        [idToSlug]
+    );
+
+    // Resolve active tab from URL
+    const resolvedTab: T = tabSlug && slugToId[tabSlug] ? slugToId[tabSlug] : defaultId;
+    const [activeTab, setActiveTab] = useState<T>(resolvedTab);
+    const [activeSubSlug, setActiveSubSlug] = useState<string>(subSlug);
+
+    // Sync state when URL changes (e.g. browser back/forward)
+    if (resolvedTab !== activeTab) {
+        setActiveTab(resolvedTab);
+    }
+    if (subSlug !== activeSubSlug) {
+        setActiveSubSlug(subSlug);
     }
 
+    // On mount / invalid slug: redirect to valid URL
     useEffect(() => {
-        if (sectionSlug) {
-            if (!slugToId[sectionSlug.toLowerCase()]) {
-                // If invalid slug, redirect to default
-                router.replace(`/dashboard/${idToSlug[defaultId]}`);
-            }
-        } else {
-            // Ensure URL shows default slug
-            router.replace(`/dashboard/${idToSlug[defaultId]}`);
+        const primarySlug = idToSlug[defaultId];
+        if (!tabSlug) {
+            // No slug at all → go to default tab
+            router.replace(`/dashboard/${primarySlug}`);
+        } else if (!slugToId[tabSlug]) {
+            // Unknown tab slug → redirect to default
+            router.replace(`/dashboard/${primarySlug}`);
         }
-    }, [sectionSlug, slugToId, idToSlug, defaultId, router]);
+        // sub-slug is user-controlled state; we don't validate or redirect it
+    }, [tabSlug, slugToId, idToSlug, defaultId, router]);
 
-    const handleTabChange = (id: string) => {
-        const slug = idToSlug[id as T] || idToSlug[defaultId];
-        router.push(`/dashboard/${slug}`);
-        setActiveTab(id as T);
+    /**
+     * Navigate to a different primary tab.
+     * Clears any active sub-slug.
+     */
+    const handleTabChange = useCallback(
+        (id: string) => {
+            const slug = idToSlug[id as T] ?? idToSlug[defaultId];
+            router.push(`/dashboard/${slug}`);
+            setActiveTab(id as T);
+            setActiveSubSlug("");
+        },
+        [idToSlug, defaultId, router]
+    );
+
+    /**
+     * Set a sub-slug under the current tab.
+     * e.g. openSubSlug("search") → /dashboard/overview/search
+     *      openSubSlug("")       → /dashboard/overview
+     */
+    const setSubSlug = useCallback(
+        (sub: string) => {
+            const currentTabSlug = idToSlug[activeTab] ?? idToSlug[defaultId];
+            if (sub) {
+                router.push(`/dashboard/${currentTabSlug}/${sub}`);
+            } else {
+                router.push(`/dashboard/${currentTabSlug}`);
+            }
+            setActiveSubSlug(sub);
+        },
+        [activeTab, idToSlug, defaultId, router]
+    );
+
+    /**
+     * Close/clear the current sub-slug (goes back to bare tab URL).
+     */
+    const clearSubSlug = useCallback(() => {
+        setSubSlug("");
+    }, [setSubSlug]);
+
+    return {
+        /** The currently active primary tab ID */
+        activeTab,
+        /** The currently active sub-slug string (empty string if none) */
+        activeSubSlug,
+        /** Change the primary tab (and clear sub-slug) */
+        handleTabChange,
+        /** Programmatically set the active tab ID without navigation side-effects */
+        setActiveTab,
+        /** Push a sub-slug under the current tab URL */
+        setSubSlug,
+        /** Clear the sub-slug, returning to the bare tab URL */
+        clearSubSlug,
     };
-
-    return { activeTab, setActiveTab, handleTabChange };
 }
